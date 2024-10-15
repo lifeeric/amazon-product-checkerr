@@ -49,7 +49,7 @@ def check_urls_from_file(file_path):
             {
                 "url": url,
                 "status": status,
-                "ASIN": asin,
+                "ASIN": url.split("/")[-2],
                 "Country": url.split("amazon")[1].split("/")[0].replace(".", ""),
             }
         )
