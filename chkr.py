@@ -16,64 +16,76 @@ def check_url_status(url):
             unavailable_message = soup.find(id_="productTitle")
 
             if unavailable_message is not None:
-                return 404, None
-
-            asin_table = soup.find("table", id="productDetails_detailBullets_sections1")
-
-            rows = asin_table.find_all("th")
-
-            # Loop through the rows to find the ASIN
-            asin = None
-            for row in rows:
-                if "ASIN" in row.text:
-                    # If 'ASIN' is found, the corresponding <td> will contain the value
-                    asin = row.find_next("td").text.strip()
-
-            return 200, asin
+                return 404
+            return 200
         else:
-            return response.status_code, None
+            return response.status_code
     except requests.exceptions.RequestException as e:
         print(f"Error with URL {url}: {e}")
-        return "Error", None
+        return "Error"
 
 
 def check_urls_from_file(file_path):
     with open(file_path, "r") as file:
         urls = file.readlines()
 
-    results = []
-    for url in urls:
+    for i, url in enumerate(urls):
         url = url.strip()  # Remove any extra whitespace or newlines
-        status, asin = check_url_status(url)
-        results.append(
-            {
-                "url": url,
-                "status": status,
-                "ASIN": url.split("/")[-2],
-                "Country": url.split("amazon")[1].split("/")[0].replace(".", ""),
-            }
+        status = check_url_status(url)
+        result = {
+            "url": url,
+            "status": status,
+            "ASIN": url.split("/")[-2],
+            "Country": url.split("amazon")[1].split("/")[0].replace(".", ""),
+        }
+
+        write_result_to_csv(result)
+
+        printProgressBar(
+            i + 1,
+            len(urls),
+            prefix="Progress:",
+            suffix="Complete",
+            length=70,
         )
 
     return results
 
 
 # Function to write the results to a CSV file
-def write_results_to_csv(results, output_file):
-    with open(output_file, "w", newline="") as csvfile:
+def write_result_to_csv(result):
+    output_file = "url_status_report.csv"
+    with open(output_file, "a", newline="") as csvfile:
         fieldnames = ["url", "ASIN", "Country", "status"]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writerow(result)
 
-        writer.writeheader()
-        for result in results:
-            writer.writerow(result)
+
+# Print iterations progress
+def printProgressBar(
+    iteration, total, prefix="", suffix="", decimals=1, length=100, fill="█"
+):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + "-" * (length - filledLength)
+    print("\r%s |%s| %s%% %s" % (prefix, bar, percent, suffix), end="\r")
+    # Print New Line on Complete
+    if iteration == total:
+        print()
 
 
 if __name__ == "__main__":
     input_file = "url.txt"
-    output_file = "url_status_report.csv"
-
     results = check_urls_from_file(input_file)
-
-    write_results_to_csv(results, output_file)
-
-    print(f"[✅] written to {output_file}")
+    print(f"[Done] ✅")
