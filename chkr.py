@@ -1,28 +1,33 @@
+import csv
+import time
 import requests
 from bs4 import BeautifulSoup
-import csv
 
 
 # Function to check if the product is available
-def check_url_status(url):
-    try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        }
-        response = requests.get(url, timeout=10, headers=headers)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.content, "html.parser")
+def check_url_status(url, retries=3):
+    for attemp in range(retries):
+        try:
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            }
+            response = requests.get(url, timeout=10, headers=headers)
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.content, "html.parser")
 
-            unavailable_message = soup.find(id_="productTitle")
+                unavailable_message = soup.find(id_="productTitle")
 
-            if unavailable_message is not None:
-                return 404
-            return 200
-        else:
-            return response.status_code
-    except requests.exceptions.RequestException as e:
-        print(f"Error with URL {url}: {e}")
-        return "Error"
+                if unavailable_message is not None:
+                    return 404
+                return 200
+            else:
+                return response.status_code
+        except requests.exceptions.RequestException as e:
+            print(
+                f"❌ Rate limit exceeded. Retrying in {5 * attemp} seconds. URL:{url}"
+            )
+            if attemp < retries:
+                time.sleep(5 * attemp)
 
 
 def check_urls_from_file(file_path):
@@ -48,8 +53,6 @@ def check_urls_from_file(file_path):
             suffix="Complete",
             length=70,
         )
-
-    return results
 
 
 # Function to write the results to a CSV file

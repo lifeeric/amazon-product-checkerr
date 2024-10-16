@@ -1,6 +1,8 @@
+![Demo](./thumbnail.png)
+
 # Amazon Product Checker
 
-This Python script fetches an Amazon product page if available, if so extracts the ASIN (Amazon Standard Identification Number) from the product details.
+This Python script fetches an Amazon product page if available with retry mechanism
 
 ## Prerequisites
 
