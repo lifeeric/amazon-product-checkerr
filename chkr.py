@@ -14,13 +14,17 @@ def check_url_status(url, retries=3):
             response = requests.get(url, timeout=10, headers=headers)
             if response.status_code == 200:
                 soup = BeautifulSoup(response.content, "html.parser")
+                rate_limit = soup.find(id="captchacharacters")
+                if rate_limit:
+                    raise Exception("Rate limit exceeded")
 
-                unavailable_message = soup.find(id_="productTitle")
+                productTitle = soup.find(id="productTitle")
 
-                if unavailable_message is not None:
+                if productTitle is None:
                     return 404
                 return 200
             else:
+                print("[STATUS]", response.status_code)
                 return response.status_code
         except requests.exceptions.RequestException as e:
             print(
